@@ -9,12 +9,14 @@ import java.util.List;
 public class Formiga {
 
     private int id;
+    private Cidade cidadeInicial;
     private Cidade cidadePosicionada;
-    private List<Cidade> tour = new ArrayList<>();
+    private List<Visita> tour = new ArrayList<>();
 
     public Formiga(int id, Cidade cid){
 
         this.id = id;
+        this.cidadeInicial = cid;
         this.cidadePosicionada = cid;
     }
 
@@ -48,11 +50,11 @@ public class Formiga {
         this.id = id;
     }
 
-    public void setTour(List<Cidade> tour) {
+    public void setTour(List<Visita> tour) {
         this.tour = tour;
     }
 
-    public List<Cidade> getTour() {
+    public List<Visita> getTour() {
         return tour;
     }
 
@@ -62,5 +64,13 @@ public class Formiga {
 
     public void setCidadePosicionada(Cidade cidadePosicionada) {
         this.cidadePosicionada = cidadePosicionada;
+    }
+
+    public Cidade getCidadeInicial() {
+        return cidadeInicial;
+    }
+
+    public void setCidadeInicial(Cidade cidadeInicial) {
+        this.cidadeInicial = cidadeInicial;
     }
 }

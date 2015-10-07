@@ -5,50 +5,51 @@ package entidade;
  */
 public class Aresta {
 
-    /*private Cidade cidadeOrigem;
-    private Cidade cidadeDestino;*/
+    private int id;
 
     private Cidade vizinho;
 
     private double distancia;
     private double feromonio;
 
-    public Aresta(Cidade vizinhoP, double distanciaP, double feromonioP){
+    public Aresta(int idP, Cidade vizinhoP, double distanciaP, double feromonioP){
 
+        this.id = idP;
         this.vizinho = vizinhoP;
         this.distancia = distanciaP;
         this.feromonio = feromonioP;
     }
 
-    /*public Aresta(Cidade cid1, Cidade cid2){
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
 
-        this.cidadeOrigem = cid1;
-        this.cidadeDestino = cid2;
+        Aresta aresta = (Aresta) o;
+
+        return id == aresta.id;
+
     }
 
-    public Aresta(Cidade cid1, Cidade cid2, double distanciaP, double feromonioP){
-
-        this.cidadeOrigem = cid1;
-        this.cidadeDestino = cid2;
-        this.distancia = distanciaP;
-        this.feromonio = feromonioP;
-    }*/
-
-    /*public Cidade getCidadeOrigem() {
-        return cidadeOrigem;
+    @Override
+    public int hashCode() {
+        return id;
     }
 
-    public void setCidadeOrigem(Cidade cidade1) {
-        this.cidadeOrigem = cidade1;
+    @Override
+    public String toString() {
+        return "Aresta{" +
+                "id=" + id +
+                '}';
     }
 
-    public Cidade getCidadeDestino() {
-        return cidadeDestino;
+    public int getId() {
+        return id;
     }
 
-    public void setCidadeDestino(Cidade cidade2) {
-        this.cidadeDestino = cidade2;
-    }*/
+    public void setId(int id) {
+        this.id = id;
+    }
 
     public Cidade getVizinho() {
         return vizinho;

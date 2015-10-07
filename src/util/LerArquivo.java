@@ -3,6 +3,7 @@ package util;
 import entidade.Aresta;
 import entidade.Cidade;
 import entidade.Coordenada;
+import servico.ACS;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
@@ -29,17 +30,13 @@ public class LerArquivo {
             String line;
             String[] item;
             boolean lerArestas = false;
-            int id = 0;
+            int id = 0, idAresta = 0;
 
             while ((line = br.readLine()) != null) {
 
-                if (!lerArestas){
-
-                    if (! line.contains(PIPE)){
-
+                if (!lerArestas)
+                    if (!line.contains(PIPE))
                         lerArestas = true;
-                    }
-                }
 
                 if (line.length() > 1) {
 
@@ -52,7 +49,8 @@ public class LerArquivo {
 
                     } else {
 
-                        adicionarAresta(item);
+                        adicionarAresta(item, idAresta);
+                        idAresta++;
                     }
                 }
             }
@@ -75,7 +73,7 @@ public class LerArquivo {
         cidades.add(cidade);
     }
 
-    private static void adicionarAresta(String[] item){
+    private static void adicionarAresta(String[] item, int idAresta){
 
         final Cidade cidadeOrigem = cidades.get(Integer.parseInt(item[0]));
         final Cidade cidadeDestino = cidades.get(Integer.parseInt(item[1]));
@@ -83,11 +81,9 @@ public class LerArquivo {
         final double distancia = calcularDistancia(cidadeOrigem, cidadeDestino);
 
         //TODO precisa ser em um ciclo para selecionar a menor distância
-        //final double feromonioZero = Math.pow((double)cidades.size()*distancia, -1);
-        //final Aresta aresta = new Aresta(cidadeOrigem, cidadeDestino, distancia, 0);
 
-        final Aresta aresta = new Aresta(cidadeDestino, distancia, 0);
-        final Aresta aresta2 = new Aresta(cidadeOrigem, distancia, 0);
+        final Aresta aresta = new Aresta(idAresta, cidadeDestino, distancia, 0);
+        final Aresta aresta2 = new Aresta(idAresta, cidadeOrigem, distancia, 0);
 
         cidadeOrigem.getArestas().add(aresta);
         cidadeDestino.getArestas().add(aresta2);
