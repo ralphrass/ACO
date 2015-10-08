@@ -20,7 +20,7 @@ public class Inicializar {
 
     public static List<Cidade> cidades = new ArrayList<>();
 
-    private static final String ARQUIVO = "C:\\Users\\Ralph\\workspace-gpin-intellij\\ACO\\src\\recursos\\cidades_12.txt";
+    private static final String ARQUIVO = "C:\\Users\\Ralph\\workspace-gpin-intellij\\ACO\\src\\recursos\\cenario_50.txt";
 
     public static void lerArquivo(String caminho){
 
@@ -79,8 +79,6 @@ public class Inicializar {
 
         //TODO, substituir pela distância euclidiana (evitar loop)
         final double distancia = calcularDistancia(cidadeOrigem, cidadeDestino);
-
-        //TODO precisa ser em um ciclo para selecionar a menor distância
 
         final Aresta aresta = new Aresta(idAresta, cidadeDestino, distancia, 0);
         final Aresta aresta2 = new Aresta(idAresta, cidadeOrigem, distancia, 0);

@@ -14,14 +14,14 @@ import java.util.*;
  */
 public class ACS {
 
-    public static final int NR_ITERACOES = 10;
+    public static final int NR_ITERACOES = 1;
 
-    public static final int NR_FORMIGAS = 10; //padrão = 10. Não pode exceder o número de cidades
+    public static final int NR_FORMIGAS = 1; //padrão = 10. Não pode exceder o número de cidades
 
     public static final double RHO = 0.1;  //Deve ser > 0 e < 1    Padrao = 0.1 (?) Taxa de Evaporação
     public static final double ALFA = RHO; //Deve ser > 0 e < 1    Padrao = RHO (?)
-    public static final double BETA = 1d;  //Deve ser > 0          Padrao = 2 (?)
-    private static final double q0 = 0.0;   //Deve ser 0 <= q0 <= 1 Padrao = 0.0
+    public static final double BETA = 2d;  //Deve ser > 0          Padrao = 2 (?)
+    private static final double q0 = 0.5;   //Deve ser 0 <= q0 <= 1 Padao = 0.9
 
     public static double TAU_ZERO; //Calculado pelo Algoritmo do Vizinho mais Próximo
     public static double L_BEST; //Menor distância entre origem e destino
@@ -63,7 +63,7 @@ public class ACS {
                             continue;
                         }
 
-                        Aresta proximaAresta = escolherProximaAresta(formiga);
+                        Aresta proximaAresta = executarRegraDeTransicao(formiga);
 
                         if (proximaAresta == null) { //Formiga em loop
 
@@ -237,109 +237,24 @@ public class ACS {
     /**
      * Eq. {3}
      * */
-    private static Aresta escolherProximaAresta(Formiga formiga){
+    private static Aresta executarRegraDeTransicao(Formiga formiga){
 
         Aresta proximaAresta = null;
+
+        List<Aresta> arestasInexploradas = Utils.obterArestasInexploradas(formiga);
 
         double q = Math.random();
 
         if (q <= q0){
 
-            //Percorre todas as cidades adjacentes e calcula a transição, favorecendo a maior (+ feromônio)
-            proximaAresta = calcularTransicao(formiga);
+            proximaAresta = CalcularTransicao.escolherAMelhorAresta(arestasInexploradas);
 
         } else {
 
-            proximaAresta = obterCidadePorProbabilidadePonderada(formiga);
+            proximaAresta = CalcularTransicao.escolherPorProbabilidadePseudoRandomica(arestasInexploradas);
         }
 
         return proximaAresta;
-    }
-
-    /**
-     * Eq. {1} - probabilidade ponderada
-     * */
-    private static Aresta obterCidadePorProbabilidadePonderada(Formiga formiga){
-
-        double denominador, probabilidadeLocal, probabilidadeGlobal = 0d;
-        Aresta proximaAresta = null;
-
-        List<Aresta> arestas = formiga.getCidadePosicionada().getArestas();
-
-        for (Aresta aresta : arestas) { //Explora todas as cidades adjacentes à posição atual
-
-            if (Utils.isCidadeJaVisitada(formiga, aresta)) //Ignora arestas já visitadas
-                continue;
-
-            denominador = 0d;
-
-            final double NUMERADOR = calcularFeromonioLocal(aresta);
-
-            for (int j=0; j<arestas.size(); j++){
-
-                if (arestas.get(j) == aresta) //Ignora a aresta corrente
-                    continue;
-
-                denominador += calcularFeromonioLocal(arestas.get(j));
-            }
-
-            probabilidadeLocal = NUMERADOR/denominador;
-
-            if (probabilidadeLocal > probabilidadeGlobal){
-
-                probabilidadeGlobal = probabilidadeLocal;
-                proximaAresta = aresta;
-            }
-        }
-
-        return proximaAresta;
-    }
-
-    /**
-     * Eq. {3} - arg max
-     * */
-    private static Aresta calcularTransicao(Formiga formiga){
-
-        double transicaoGlobal = 0, transicaoLocal;
-        Aresta melhorAresta = null;
-
-        List<Aresta> arestas = formiga.getCidadePosicionada().getArestas();
-
-        for (Aresta aresta : arestas) {
-
-            if (Utils.isCidadeJaVisitada(formiga, aresta))
-                continue;
-
-            transicaoLocal = calcularFeromonioLocal(aresta);
-
-            if (transicaoGlobal < transicaoLocal){
-
-                transicaoGlobal = transicaoLocal;
-                melhorAresta = aresta;
-            }
-        }
-
-        return melhorAresta;
-    }
-
-    /**
-     * Eq. {1} / Eq. {3} - Parte I (numerador)
-     * */
-    private static double calcularFeromonioLocal(Aresta aresta){
-
-        Double feromonioLocal = aresta.getFeromonio() * obterDistanciaInversa(aresta);
-        return feromonioLocal;
-    }
-
-    /**
-     * Eq. {1} / Eq. {3} - (termo à direita)
-     * */
-    private static double obterDistanciaInversa(Aresta aresta){
-
-        double ETA = 1 / aresta.getDistancia();
-        Double distanciaInversa = Math.pow(ETA, BETA);
-
-        return distanciaInversa;
     }
 
     public static void main(String args[]){
