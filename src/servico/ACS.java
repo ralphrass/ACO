@@ -5,7 +5,7 @@ import entidade.Cidade;
 import entidade.Formiga;
 import entidade.Visita;
 import util.GerarResultado;
-import util.LerArquivo;
+import util.Utils;
 
 import java.util.*;
 
@@ -14,86 +14,28 @@ import java.util.*;
  */
 public class ACS {
 
-    public static final int NR_ITERACOES = 1;
+    public static final int NR_ITERACOES = 10;
 
-    public static final int NR_FORMIGAS = 2; //padrão = 10. Não pode exceder o número de cidades
+    public static final int NR_FORMIGAS = 10; //padrão = 10. Não pode exceder o número de cidades
 
     public static final double RHO = 0.1;  //Deve ser > 0 e < 1    Padrao = 0.1 (?) Taxa de Evaporação
     public static final double ALFA = RHO; //Deve ser > 0 e < 1    Padrao = RHO (?)
-    public static final double BETA = 2d;  //Deve ser > 0          Padrao = 2 (?)
-    private static final double q0 = 0.9;   //Deve ser 0 <= q0 <= 1 Padrao = 0.0
+    public static final double BETA = 1d;  //Deve ser > 0          Padrao = 2 (?)
+    private static final double q0 = 0.0;   //Deve ser 0 <= q0 <= 1 Padrao = 0.0
 
-    private static double TAU_ZERO; //Calculado pelo Algoritmo do Vizinho mais Próximo
-    private static double L_BEST; //Menor distância entre origem e destino
+    public static double TAU_ZERO; //Calculado pelo Algoritmo do Vizinho mais Próximo
+    public static double L_BEST; //Menor distância entre origem e destino
 
     public static final int ID_CIDADE_ORIGEM = 0;
     public static final int ID_CIDADE_DESTINO = 1;
 
-    private static List<Formiga> formigas = new ArrayList<>();
+    public static List<Formiga> formigas = new ArrayList<>();
     public static List<Cidade> cidades;
-    //private static List<Cidade> MELHOR_SOLUCAO_GLOBAL; //Visita realizada pelo Algoritmo do Vizinho mais Próximo
-    //private static List<Aresta> arestas;
 
-    private static final String ARQUIVO = "C:\\Users\\Ralph\\workspace-gpin-intellij\\ACO\\src\\recursos\\cidades_12.txt";
+    private static List<List<Visita>> melhoresTours = new ArrayList<>();
 
     /**
-     * Fase (1) - Parte I/III
-     * Importa o TXT e popula os vetores de cidades e arestas
-     * */
-    private static void inicializarCidades(){
-
-        LerArquivo.lerArquivo(ARQUIVO);
-
-        ACS.cidades = LerArquivo.cidades;
-        //ACS.arestas = LerArquivo.arestas;
-    }
-
-    /**
-     * Fase (1) - Parte II/III - Posiciona formigas em cidades de forma randômica
-     * */
-    private static void inicializarFormigas(){
-
-        for (int i=0; i<NR_FORMIGAS; i++){
-
-            Cidade cidade = ACS.cidades.get((int)(Math.random()* ACS.cidades.size()));
-
-            Formiga formiga = new Formiga(i, cidade);
-            formiga.getTour().add(new Visita(cidade, null));
-
-            formigas.add(formiga);
-        }
-    }
-
-    /**
-     * Fase (1) - Parte III/III
-     * Executa o algoritmo do vizinho mais próximo (Nearest Neighbour)
-     * */
-    private static void inicializarFeromonios(){
-
-        L_BEST = NearestNeighbour.obterDistanciaDoMenorTour();
-
-        final int TAMANHO = ACS.cidades.size();
-        final Double LNN_INVERSO = Math.pow(TAMANHO * L_BEST, -1); //Pg. 56, último parágrafo
-
-        TAU_ZERO = reduzirValor(LNN_INVERSO);
-
-        //Atualiza o feromônio de todas as arestas
-        for (Cidade cidade : ACS.cidades) {
-
-            for (Aresta aresta : cidade.getArestas()){
-
-                if (aresta.getFeromonio() == 0){
-
-                    aresta.setFeromonio(TAU_ZERO);
-                }
-            }
-        }
-
-        //System.out.print(ACS.cidades);
-    }
-
-    /**
-     * Fase (2)
+     * Fase {3}
      * Move todas as formigas da cidade inicial até o destino, armazenando os caminhos tomados
      * */
     private static Set<Formiga> moverFormigas(){
@@ -101,13 +43,14 @@ public class ACS {
         int nrFormigasComTourCompleto = 0;
         Set<Formiga> formigasComTourCompleto = new HashSet<>();
 
-        //TODO repetir durante "n" iterações
-
         final int NR_CIDADES = ACS.cidades.size();
 
         do { //Até que todas as formigas completem o Tour
 
             for (int i=0; i<=NR_CIDADES; i++){
+
+                if (nrFormigasComTourCompleto == ACS.NR_FORMIGAS)
+                    i=NR_CIDADES;
 
                 if (i < NR_CIDADES) { //Ida
 
@@ -120,7 +63,7 @@ public class ACS {
                             continue;
                         }
 
-                        Aresta proximaAresta = escolherProximaCidade(formiga);
+                        Aresta proximaAresta = escolherProximaAresta(formiga);
 
                         if (proximaAresta == null) { //Formiga em loop
 
@@ -136,19 +79,39 @@ public class ACS {
                             formiga.getTour().get(0).setAresta(proximaAresta); //Mesma aresta da próxima cidade
                         }
 
-                        Double feromonio = computarFeromonioLocal(proximaAresta);
-                        atualizarFeromonioLocal(feromonio, proximaAresta);
-
-                        System.out.println(feromonio);
+                        //Acumula depósito de feromônio (regra {02})
+                        final double DELTA_TAU = 1 / proximaAresta.getDistancia();
+                        formiga.getDeltaTau().put(proximaAresta, DELTA_TAU);
                     }
 
-                } else { //Volta TODO (???)
+                } else { //Volta
 
                     for (Formiga formiga : ACS.formigas) {
 
-                        formiga.setCidadePosicionada(formiga.getCidadeInicial());
-                        formiga.getTour().add(new Visita(formiga.getCidadeInicial(), null));
+                        for (int j=(formiga.getTour().size()-1); j>0; j--){ //Percorre o Tour inverso
+
+                            //Obtém a cidade anterior à cidade atual no Tour
+                            final Cidade cidadeRetorno = formiga.getTour().get(j-1).getCidade();
+
+                            //Acumula o DELTA_TAU de um passo em direção à origem
+                            final double DELTA_TAU = 1 / formiga.getTour().get(j).getAresta().getDistancia();
+                            final double DELTA_TAU_PRESENTE = formiga.getDeltaTau().get(formiga.getTour().get(j).getAresta());
+
+                            formiga.getDeltaTau().put(formiga.getTour().get(j).getAresta(), DELTA_TAU_PRESENTE + DELTA_TAU);
+
+                            //Move a formiga para a cidade anterior
+                            formiga.setCidadePosicionada(cidadeRetorno);
+                        }
                     }
+                }
+            }
+
+            for (Formiga formiga : ACS.formigas) {
+
+                for (Visita visita : formiga.getTour()){
+
+                    Double feromonio = computarFeromonioLocal(visita.getAresta(), formiga);
+                    atualizarFeromonioLocal(feromonio, visita.getAresta());
                 }
             }
 
@@ -158,22 +121,24 @@ public class ACS {
     }
 
     /**
-     * Regra (5)
+     * Eq. {5}  ?(rk ,sk) := (1-?) ?(rk ,sk) + ? ?0
      * */
-    private static Double computarFeromonioLocal(Aresta aresta){
+    private static Double computarFeromonioLocal(Aresta aresta, Formiga formiga){
 
-        Double feromonio = (1 - RHO) * aresta.getFeromonio() + RHO * TAU_ZERO;
-        feromonio = reduzirValor(feromonio);
+        final double FEROMONIO_DEPOSITADO = formiga.getDeltaTau().get(aresta);
+        final double FEROMONIO_PRESENTE = aresta.getFeromonio();
+
+        Double feromonio = (1 - RHO) * (FEROMONIO_PRESENTE + FEROMONIO_DEPOSITADO) + RHO * TAU_ZERO;
 
         return feromonio;
     }
 
     /**
-     * Fase (3) - "Compute Lbest", Update edges belonging to Lbest using (4)
+     * Fase {3} - Evaporação de feromônios e reinicilização de Tours
      * */
     private static void atualizarFeromonioGlobal(Set<Formiga> formigasComTourCompleto){
 
-        double Lbest = L_BEST;
+        double Lbest = Math.pow(L_BEST, 2); //"piora" o melhor Tour
         List<Visita> melhorTour = new ArrayList<>();
 
         //Encontra a formiga com o melhor Tour
@@ -187,6 +152,8 @@ public class ACS {
                 melhorTour = formiga.getTour();
             }
         }
+
+        melhoresTours.add(melhorTour);
 
         List<Aresta> arestasJaVisitadas = new ArrayList<>();
 
@@ -205,18 +172,10 @@ public class ACS {
                 aresta.setFeromonio(feromonio);
             }
         }
-
-        /*for (Visita visita : melhorTour){
-
-            Double feromonio = computarFeromonioGlobal(visita, Lbest);
-
-            if (visita.getAresta() != null) //Ignora a cidade inicial
-                visita.getAresta().setFeromonio(feromonio);
-        }*/
     }
 
     /**
-     * Regra (4)
+     * Eq. {4}
      * */
     private static Double computarFeromonioGlobal(Aresta aresta, Double Lbest, List<Visita> melhorTour){
 
@@ -225,7 +184,8 @@ public class ACS {
 
         for (Visita visita : melhorTour) {
 
-            if (visita.getAresta().equals(aresta)) {
+            if (visita.getAresta() != null &&
+                    visita.getAresta().equals(aresta)) {
 
                 isArestaNoMelhorTour = true;
                 break;
@@ -242,13 +202,12 @@ public class ACS {
         }
 
         Double feromonio = (1 - ALFA) * aresta.getFeromonio() + ALFA * DELTA_TAU;
-        feromonio = reduzirValor(feromonio);
 
         return feromonio;
     }
 
     /**
-     * Fase (3) - "Compute Lk"
+     * Fase {3} - "Compute Lk"
      * */
     private static Double obterDistanciaDoTour(Formiga formiga){
 
@@ -261,7 +220,6 @@ public class ACS {
         return distancia;
     }
 
-    //TODO - Possivelmente modificar como a trilha é armazenada
     private static void atualizarFeromonioLocal(double feromonio, Aresta proximaAresta){
 
         for (Cidade cidade : ACS.cidades){
@@ -277,9 +235,9 @@ public class ACS {
     }
 
     /**
-     * Regra (3)
+     * Eq. {3}
      * */
-    private static Aresta escolherProximaCidade(Formiga formiga){
+    private static Aresta escolherProximaAresta(Formiga formiga){
 
         Aresta proximaAresta = null;
 
@@ -299,7 +257,7 @@ public class ACS {
     }
 
     /**
-     * Regra (1) - probabilidade ponderada
+     * Eq. {1} - probabilidade ponderada
      * */
     private static Aresta obterCidadePorProbabilidadePonderada(Formiga formiga){
 
@@ -310,7 +268,7 @@ public class ACS {
 
         for (Aresta aresta : arestas) { //Explora todas as cidades adjacentes à posição atual
 
-            if (isArestaJaVisitada(formiga, aresta)) //Ignora arestas já visitadas
+            if (Utils.isCidadeJaVisitada(formiga, aresta)) //Ignora arestas já visitadas
                 continue;
 
             denominador = 0d;
@@ -338,7 +296,7 @@ public class ACS {
     }
 
     /**
-     * Regra (3) - arg max
+     * Eq. {3} - arg max
      * */
     private static Aresta calcularTransicao(Formiga formiga){
 
@@ -349,7 +307,7 @@ public class ACS {
 
         for (Aresta aresta : arestas) {
 
-            if (isArestaJaVisitada(formiga, aresta)) //Ignora arestas já visitadas
+            if (Utils.isCidadeJaVisitada(formiga, aresta))
                 continue;
 
             transicaoLocal = calcularFeromonioLocal(aresta);
@@ -365,69 +323,29 @@ public class ACS {
     }
 
     /**
-     * Auxiliar
-     * */
-    private static boolean isArestaJaVisitada(Formiga formiga, Aresta aresta){
-
-        boolean jaVisitado = false;
-
-        for (Visita visita : formiga.getTour())
-            if (visita.getAresta() != null && visita.getAresta().equals(aresta))
-                jaVisitado = true;
-
-        return jaVisitado;
-    }
-
-    /**
-     * Regra (1) / Regra (3) - Parte I (numerador)
+     * Eq. {1} / Eq. {3} - Parte I (numerador)
      * */
     private static double calcularFeromonioLocal(Aresta aresta){
 
         Double feromonioLocal = aresta.getFeromonio() * obterDistanciaInversa(aresta);
-        feromonioLocal = reduzirValor(feromonioLocal);
-
         return feromonioLocal;
     }
 
     /**
-     * Regra (1) / Regra (3) - (termo à direita)
+     * Eq. {1} / Eq. {3} - (termo à direita)
      * */
     private static double obterDistanciaInversa(Aresta aresta){
 
-        Double distanciaInversa = Math.pow((1 / aresta.getDistancia()), BETA);
-        distanciaInversa = reduzirValor(distanciaInversa);
+        double ETA = 1 / aresta.getDistancia();
+        Double distanciaInversa = Math.pow(ETA, BETA);
 
         return distanciaInversa;
     }
 
-    /**
-     * Auxiliar
-     * */
-    public static Double reduzirValor(Double valor){
-
-        final Double valorT = Double.parseDouble(valor.toString().substring(0, obterTamanho(valor)));
-
-        return valorT;
-    }
-
-    /**
-     * Auxiliar
-     * */
-    private static int obterTamanho(Double valor){
-
-        final int LIMITE = 8;
-
-        final int TAMANHO = (valor.toString().length() > LIMITE)?LIMITE:valor.toString().length();
-
-        return TAMANHO;
-    }
-
     public static void main(String args[]){
 
-        //Fase (1)
-        inicializarCidades();
-        inicializarFeromonios();
-        inicializarFormigas();
+        //Fase {1} - Monta o grafo e inicializa os feromônios respeitando a regra do caminho mais curto
+        Inicializar.inicializarGrafo();
 
         if (NR_FORMIGAS > ACS.cidades.size()){
 
@@ -435,11 +353,17 @@ public class ACS {
             return;
         }
 
-        //Fase (2)
-        Set<Formiga> formigas = moverFormigas();
+        for (int i=0; i<NR_ITERACOES; i++){
 
-        //Fase (3)
-        atualizarFeromonioGlobal(formigas);
+            //Fase {2}
+            Set<Formiga> formigas = moverFormigas();
+
+            //Fase {3}
+            atualizarFeromonioGlobal(formigas);
+
+            ACS.formigas = new ArrayList<>();
+            Inicializar.inicializarFormigas();
+        }
 
         GerarResultado.exportarResultado();
     }

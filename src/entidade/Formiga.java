@@ -1,7 +1,9 @@
 package entidade;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Created by Ralph on 05/10/2015.
@@ -9,15 +11,16 @@ import java.util.List;
 public class Formiga {
 
     private int id;
-    private Cidade cidadeInicial;
     private Cidade cidadePosicionada;
     private List<Visita> tour = new ArrayList<>();
+    //private double DeltaTau; // Somatório de 1/Lk {Lk = distância}, útil para o cálculo de depósito de feromônio local {regra (02)}
+    private Map<Aresta, Double> DeltaTau = new HashMap<>();
 
     public Formiga(int id, Cidade cid){
 
         this.id = id;
-        this.cidadeInicial = cid;
         this.cidadePosicionada = cid;
+        //this.DeltaTau = 0d;
     }
 
     @Override
@@ -42,6 +45,14 @@ public class Formiga {
                 '}';
     }
 
+    public Map<Aresta, Double> getDeltaTau() {
+        return DeltaTau;
+    }
+
+    public void setDeltaTau(Map<Aresta, Double> deltaTau) {
+        this.DeltaTau = deltaTau;
+    }
+
     public int getId() {
         return id;
     }
@@ -64,13 +75,5 @@ public class Formiga {
 
     public void setCidadePosicionada(Cidade cidadePosicionada) {
         this.cidadePosicionada = cidadePosicionada;
-    }
-
-    public Cidade getCidadeInicial() {
-        return cidadeInicial;
-    }
-
-    public void setCidadeInicial(Cidade cidadeInicial) {
-        this.cidadeInicial = cidadeInicial;
     }
 }
