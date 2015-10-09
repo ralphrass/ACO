@@ -4,6 +4,8 @@ import entidade.Aresta;
 import entidade.Formiga;
 import util.Utils;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -15,54 +17,68 @@ import java.util.Set;
 public class CalcularTransicao {
 
     /**
-     * Eq. {1} - probabilidade pseudo-randômica
+     * Eq. {1} - probabilidade pseudo-randômica (exploration)
+     * TODO - ArrayIndexOutOfBounds (?)
      * */
     public static Aresta escolherPorProbabilidadePseudoRandomica(List<Aresta> arestas){
 
         int indice = 0;
-        double denominador, probabilidadeLocal, pesoTotal = 0d;
+        BigDecimal denominador, probabilidadeLocal, pesoTotal = new BigDecimal(0);
         Aresta proximaAresta = null;
+        List<Aresta> arestasRestantes;
 
-        double[] pesos = new double[arestas.size()];
+        BigDecimal[] pesos = new BigDecimal[arestas.size()];
 
         for (Aresta aresta : arestas) { //Explora todas as cidades adjacentes à cidade em que a formiga se encontra
 
-            denominador = 0d;
+            denominador = new BigDecimal(0);
 
-            final double NUMERADOR = calcularCustoDaAresta(aresta);
+            final BigDecimal NUMERADOR = calcularCustoDaAresta(aresta);
 
-            List<Aresta> arestasRestantes = new ArrayList<>(arestas);
+            arestasRestantes = new ArrayList<>(arestas);
             arestasRestantes.remove(aresta);
 
             //Somatório das arestas restantes para obter o denominador
             for (Aresta arestaRestante : arestasRestantes){
 
-                denominador += calcularCustoDaAresta(arestaRestante);
+                denominador = denominador.add(calcularCustoDaAresta(arestaRestante));
             }
 
-            probabilidadeLocal = NUMERADOR/denominador;
+            probabilidadeLocal = NUMERADOR.divide(denominador, 12, RoundingMode.HALF_UP);
 
-            pesoTotal += probabilidadeLocal;
+            pesoTotal = pesoTotal.add(probabilidadeLocal);
 
             pesos[indice++] = probabilidadeLocal;
         }
 
         int indiceRandomico = -1;
 
-        double valorRandomico = Math.random() * pesoTotal;
+        BigDecimal valorRandomico = pesoTotal.multiply(new BigDecimal(Math.random()));
 
         for (int i=0; i<arestas.size(); i++){
 
-            valorRandomico -= pesos[i];
+            valorRandomico = valorRandomico.subtract(pesos[i]);
 
-            if (valorRandomico <= 0d){
+            int diferenca = valorRandomico.compareTo(new BigDecimal(0));
+
+            if (diferenca == 0 || diferenca == -1){ // valorRandomico <= 0
 
                 indiceRandomico = i;
                 break;
             }
         }
 
-        return arestas.get(indiceRandomico);
+        try {
+
+            return arestas.get(indiceRandomico);
+
+        } catch (Exception e) {
+
+            System.out.println("Falha ao obter o índice: "+indiceRandomico+". Quantidade de arestas: "+arestas.size());
+            e.printStackTrace();
+        }
+
+        return null;
     }
 
     /**
@@ -70,14 +86,16 @@ public class CalcularTransicao {
      * */
     public static Aresta escolherAMelhorAresta(List<Aresta> arestas){
 
-        double menorCustoLocal = 0, custoLocal;
+        BigDecimal menorCustoLocal = new BigDecimal(0), custoLocal;
         Aresta melhorAresta = null;
 
         for (Aresta aresta : arestas) {
 
             custoLocal = calcularCustoDaAresta(aresta);
 
-            if (menorCustoLocal < custoLocal){
+            int diferenca = menorCustoLocal.compareTo(custoLocal);
+
+            if (diferenca == -1){ // menorCustoLocal < custoLocal
 
                 menorCustoLocal = custoLocal;
                 melhorAresta = aresta;
@@ -90,20 +108,42 @@ public class CalcularTransicao {
     /**
      * Eq. {1} / Eq. {3} - Parte I (numerador)
      * */
-    private static double calcularCustoDaAresta(Aresta aresta){
+    private static BigDecimal calcularCustoDaAresta(Aresta aresta){
 
-        Double feromonioLocal = aresta.getFeromonio() * obterDistanciaInversa(aresta);
+        BigDecimal feromonioLocal = aresta.getFeromonio().multiply(obterDistanciaInversa(aresta));
         return feromonioLocal;
     }
 
     /**
      * Eq. {1} / Eq. {3} - (termo à direita)
      * */
-    private static double obterDistanciaInversa(Aresta aresta){
+    private static BigDecimal obterDistanciaInversa(Aresta aresta){
 
-        double ETA = 1 / aresta.getDistancia();
-        Double distanciaInversa = Math.pow(ETA, ACS.BETA);
+        BigDecimal ETA = new BigDecimal(1);
 
-        return distanciaInversa;
+        try {
+
+            ETA = ETA.divide(aresta.getDistancia(), 12, RoundingMode.HALF_UP);
+            BigDecimal distanciaInversa = new BigDecimal(Math.pow(ETA.doubleValue(), ACS.BETA)).setScale(12, RoundingMode.HALF_UP);
+
+            return distanciaInversa;
+
+        } catch (Exception e) {
+
+            System.out.println("Falha ao obter distância inversa para a aresta: " + aresta);
+
+            if (aresta != null){
+
+                System.out.println(" de distância: "+aresta.getDistancia());
+
+            } else {
+
+                System.out.println(" esta aresta não possui distância");
+            }
+
+            e.printStackTrace();
+        }
+
+        return null;
     }
 }

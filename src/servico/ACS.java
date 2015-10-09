@@ -7,6 +7,8 @@ import entidade.Visita;
 import util.GerarResultado;
 import util.Utils;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.*;
 
 /**
@@ -18,21 +20,22 @@ public class ACS {
 
     public static final int NR_FORMIGAS = 1; //padrão = 10. Não pode exceder o número de cidades
 
-    public static final double RHO = 0.1;  //Deve ser > 0 e < 1    Padrao = 0.1 (?) Taxa de Evaporação
-    public static final double ALFA = RHO; //Deve ser > 0 e < 1    Padrao = RHO (?)
+    public static final BigDecimal RHO = new BigDecimal(0.1);  //Deve ser > 0 e < 1    Padrao = 0.1 (?) Taxa de Evaporação
+    public static final BigDecimal ALFA = RHO; //Deve ser > 0 e < 1    Padrao = RHO (?)
     public static final double BETA = 2d;  //Deve ser > 0          Padrao = 2 (?)
-    private static final double q0 = 0.5;   //Deve ser 0 <= q0 <= 1 Padao = 0.9
+    private static final double q0 = 0.9;   //Deve ser 0 <= q0 <= 1 Padrao = 0.9
 
-    public static double TAU_ZERO; //Calculado pelo Algoritmo do Vizinho mais Próximo
-    public static double L_BEST; //Menor distância entre origem e destino
+    public static BigDecimal TAU_ZERO; //Calculado pelo Algoritmo do Vizinho mais Próximo
+    public static BigDecimal L_BEST; //Menor distância entre origem e destino
 
     public static final int ID_CIDADE_ORIGEM = 0;
     public static final int ID_CIDADE_DESTINO = 1;
 
     public static List<Formiga> formigas = new ArrayList<>();
     public static List<Cidade> cidades;
+    public static List<Aresta> arestas = new ArrayList<>();
 
-    private static List<List<Visita>> melhoresTours = new ArrayList<>();
+    public static List<List<Visita>> melhoresTours = new ArrayList<>();
 
     /**
      * Fase {3}
@@ -67,12 +70,15 @@ public class ACS {
 
                         if (proximaAresta == null) { //Formiga em loop
 
+                            System.out.print("Formiga em loop. Na cidade "+formiga.getCidadePosicionada()+" não tem mais arestas para escolher");
                             nrFormigasComTourCompleto++;
                             continue;
                         }
 
-                        formiga.setCidadePosicionada(proximaAresta.getVizinho());
-                        formiga.getTour().add(new Visita(proximaAresta.getVizinho(), proximaAresta));
+                        Cidade destino = Utils.obterCidadeDestino(formiga.getCidadePosicionada(), proximaAresta);
+
+                        formiga.setCidadePosicionada(destino);
+                        formiga.getTour().add(new Visita(destino, proximaAresta));
 
                         if (formiga.getTour().size() == 2) { //É a primeira visita da formiga, saindo da sua cidade inicial
 
@@ -80,7 +86,7 @@ public class ACS {
                         }
 
                         //Acumula depósito de feromônio (regra {02})
-                        final double DELTA_TAU = 1 / proximaAresta.getDistancia();
+                        final BigDecimal DELTA_TAU = new BigDecimal(1).divide(proximaAresta.getDistancia(), 12, RoundingMode.HALF_UP);
                         formiga.getDeltaTau().put(proximaAresta, DELTA_TAU);
                     }
 
@@ -94,10 +100,12 @@ public class ACS {
                             final Cidade cidadeRetorno = formiga.getTour().get(j-1).getCidade();
 
                             //Acumula o DELTA_TAU de um passo em direção à origem
-                            final double DELTA_TAU = 1 / formiga.getTour().get(j).getAresta().getDistancia();
-                            final double DELTA_TAU_PRESENTE = formiga.getDeltaTau().get(formiga.getTour().get(j).getAresta());
+                            final BigDecimal DELTA_TAU = new BigDecimal(1).divide(formiga.getTour().get(j).getAresta().getDistancia(), 12, RoundingMode.HALF_UP);
+                            final BigDecimal DELTA_TAU_PRESENTE = formiga.getDeltaTau().get(formiga.getTour().get(j).getAresta());
 
-                            formiga.getDeltaTau().put(formiga.getTour().get(j).getAresta(), DELTA_TAU_PRESENTE + DELTA_TAU);
+                            final BigDecimal DELTA_TAU_TOTAL = DELTA_TAU.add(DELTA_TAU_PRESENTE);
+
+                            formiga.getDeltaTau().put(formiga.getTour().get(j).getAresta(), DELTA_TAU_TOTAL);
 
                             //Move a formiga para a cidade anterior
                             formiga.setCidadePosicionada(cidadeRetorno);
@@ -110,7 +118,7 @@ public class ACS {
 
                 for (Visita visita : formiga.getTour()){
 
-                    Double feromonio = computarFeromonioLocal(visita.getAresta(), formiga);
+                    BigDecimal feromonio = computarFeromonioLocal(visita.getAresta(), formiga);
                     atualizarFeromonioLocal(feromonio, visita.getAresta());
                 }
             }
@@ -123,12 +131,14 @@ public class ACS {
     /**
      * Eq. {5}  ?(rk ,sk) := (1-?) ?(rk ,sk) + ? ?0
      * */
-    private static Double computarFeromonioLocal(Aresta aresta, Formiga formiga){
+    private static BigDecimal computarFeromonioLocal(Aresta aresta, Formiga formiga){
 
-        final double FEROMONIO_DEPOSITADO = formiga.getDeltaTau().get(aresta);
-        final double FEROMONIO_PRESENTE = aresta.getFeromonio();
+        final BigDecimal UM = new BigDecimal(1);
 
-        Double feromonio = (1 - RHO) * (FEROMONIO_PRESENTE + FEROMONIO_DEPOSITADO) + RHO * TAU_ZERO;
+        final BigDecimal FEROMONIO_DEPOSITADO = formiga.getDeltaTau().get(aresta);
+        final BigDecimal FEROMONIO_TOTAL = aresta.getFeromonio().add(FEROMONIO_DEPOSITADO);
+
+        final BigDecimal feromonio = (UM.subtract(RHO)).multiply(FEROMONIO_TOTAL).add((RHO).multiply(TAU_ZERO));
 
         return feromonio;
     }
@@ -138,15 +148,15 @@ public class ACS {
      * */
     private static void atualizarFeromonioGlobal(Set<Formiga> formigasComTourCompleto){
 
-        double Lbest = Math.pow(L_BEST, 2); //"piora" o melhor Tour
+        BigDecimal Lbest = new BigDecimal(Math.pow(L_BEST.doubleValue(), 2)); //"piora" o melhor Tour
         List<Visita> melhorTour = new ArrayList<>();
 
         //Encontra a formiga com o melhor Tour
         for (Formiga formiga : formigasComTourCompleto) {
 
-            Double Lk = obterDistanciaDoTour(formiga);
+            BigDecimal Lk = obterDistanciaDoTour(formiga);
 
-            if (Lk < Lbest){
+            if (Lk.compareTo(Lbest) == -1){ //Lk < Lbest
 
                 Lbest = Lk;
                 melhorTour = formiga.getTour();
@@ -155,31 +165,21 @@ public class ACS {
 
         melhoresTours.add(melhorTour);
 
-        List<Aresta> arestasJaVisitadas = new ArrayList<>();
-
         //Percorre grafo inteiro e atualiza os feromônios das arestas
-        for (Cidade cidade : ACS.cidades){
+        for (Aresta aresta : ACS.arestas){
 
-            for (Aresta aresta : cidade.getArestas()){
+            BigDecimal feromonio = computarFeromonioGlobal(aresta, Lbest, melhorTour);
 
-                if (arestasJaVisitadas.contains(aresta))
-                    continue;
-
-                arestasJaVisitadas.add(aresta);
-
-                Double feromonio = computarFeromonioGlobal(aresta, Lbest, melhorTour);
-
-                aresta.setFeromonio(feromonio);
-            }
+            aresta.setFeromonio(feromonio);
         }
     }
 
     /**
      * Eq. {4}
      * */
-    private static Double computarFeromonioGlobal(Aresta aresta, Double Lbest, List<Visita> melhorTour){
+    private static BigDecimal computarFeromonioGlobal(Aresta aresta, BigDecimal Lbest, List<Visita> melhorTour){
 
-        double DELTA_TAU;
+        BigDecimal DELTA_TAU;
         boolean isArestaNoMelhorTour = false;
 
         for (Visita visita : melhorTour) {
@@ -194,14 +194,14 @@ public class ACS {
 
         if (isArestaNoMelhorTour){
 
-            DELTA_TAU = Math.pow(Lbest, -1);
+            DELTA_TAU = new BigDecimal(Math.pow(Lbest.doubleValue(), -1));
 
         } else {
 
-            DELTA_TAU = 0;
+            DELTA_TAU = new BigDecimal(0);
         }
 
-        Double feromonio = (1 - ALFA) * aresta.getFeromonio() + ALFA * DELTA_TAU;
+        BigDecimal feromonio = new BigDecimal(1).subtract(ALFA).multiply(aresta.getFeromonio()).add(ALFA).multiply(DELTA_TAU);
 
         return feromonio;
     }
@@ -209,27 +209,23 @@ public class ACS {
     /**
      * Fase {3} - "Compute Lk"
      * */
-    private static Double obterDistanciaDoTour(Formiga formiga){
+    private static BigDecimal obterDistanciaDoTour(Formiga formiga){
 
-        double distancia = 0d;
+        BigDecimal distancia = new BigDecimal(0);
 
         for (Visita visita : formiga.getTour())
             if (visita.getAresta() != null) //Ignora a cidade inicial
-                distancia += visita.getAresta().getDistancia();
+                distancia = distancia.add(visita.getAresta().getDistancia());
 
         return distancia;
     }
 
-    private static void atualizarFeromonioLocal(double feromonio, Aresta proximaAresta){
+    private static void atualizarFeromonioLocal(BigDecimal feromonio, Aresta proximaAresta){
 
-        for (Cidade cidade : ACS.cidades){
+        for (Aresta aresta : ACS.arestas){
 
-            for (Aresta aresta : cidade.getArestas()){
-
-                if (aresta.equals(proximaAresta)){
-
-                    aresta.setFeromonio(feromonio);
-                }
+            if (aresta.equals(proximaAresta)){
+                aresta.setFeromonio(feromonio);
             }
         }
     }
@@ -242,6 +238,16 @@ public class ACS {
         Aresta proximaAresta = null;
 
         List<Aresta> arestasInexploradas = Utils.obterArestasInexploradas(formiga);
+
+        if (arestasInexploradas == null || arestasInexploradas.size() == 0){ //Formiga em loop (corrigir escolha de arestas desconsiderando a cidade inicial)
+
+            return null;
+        }
+
+        if (arestasInexploradas.size() == 1){ //Só tem uma aresta para explorar, não tem sentido aplicar métodos de decisão
+
+            return  arestasInexploradas.get(0);
+        }
 
         double q = Math.random();
 

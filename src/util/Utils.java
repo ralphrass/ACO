@@ -1,13 +1,13 @@
 package util;
 
 import entidade.Aresta;
+import entidade.Cidade;
 import entidade.Formiga;
 import entidade.Visita;
+import servico.ACS;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 /**
  * Created by Ralph on 08/10/2015.
@@ -30,49 +30,82 @@ public class Utils {
         return TAMANHO;
     }
 
-    public static boolean isCidadeJaVisitada(Formiga formiga, Aresta aresta){
-
-        boolean jaVisitado = false;
+    public static boolean isArestaJaVisitada(Formiga formiga, Aresta aresta){
 
         for (Visita visita : formiga.getTour()) {
 
-            if (visita.getCidade().equals(aresta.getVizinho())){
+            if (visita.getAresta() != null && visita.getAresta().equals(aresta)){ //Formiga já visitou a aresta
 
-                jaVisitado = true;
-                break;
+                return true;
             }
         }
 
-        return jaVisitado;
+        return false;
+    }
+
+    private static boolean isCidadeJaVisitada(Formiga formiga, Aresta aresta){
+
+        Cidade cidadePosicionada = formiga.getCidadePosicionada();
+
+        List<Cidade> cidadesDaAresta = new ArrayList<>(aresta.getCidades()); //"new" evita que a remoção seja gravada na lista de cidades da aresta
+
+        cidadesDaAresta.remove(cidadePosicionada);
+
+        for (Visita visita : formiga.getTour()) {
+
+            if (cidadesDaAresta.contains(visita.getCidade())) {
+
+                return true;
+            }
+        }
+
+        return false;
     }
 
     public static List<Aresta> obterArestasInexploradas(Formiga formiga){
 
-        Set<Aresta> arestasInexploradas = new HashSet<>();
+        List<Aresta> arestasInexploradas = new ArrayList<>();
 
-        boolean jaVistado = false;
+        for (Aresta aresta : ACS.arestas){
 
-        for (Aresta aresta : formiga.getCidadePosicionada().getArestas()){
+            if (aresta.getCidades().contains(formiga.getCidadePosicionada())){ //analisa apenas as arestas associadas à cidade aonde a formiga está posicionada
 
-            for (Visita visita : formiga.getTour()){
+                if (!isArestaJaVisitada(formiga, aresta)){
 
-                if (visita.getAresta() != null && visita.getAresta().equals(aresta)){
-
-                    jaVistado = true;
-                }
-
-                if (visita.getCidade().equals(aresta.getVizinho())){
-
-                    jaVistado = true;
+                    arestasInexploradas.add(aresta);
                 }
             }
-
-            if (!jaVistado)
-                arestasInexploradas.add(aresta);
         }
 
-        List<Aresta> arestas = new ArrayList<>(arestasInexploradas);
+        //Pós-tratamento de arestas inexploradas: evita que a formiga re-visite uma cidade
+        List<Aresta> arestasRejeitadas = new ArrayList<>();
 
-        return arestas;
+        for (Aresta aresta : arestasInexploradas) {
+
+            if (isCidadeJaVisitada(formiga, aresta)){
+
+                arestasRejeitadas.add(aresta);
+            }
+        }
+
+        arestasInexploradas.removeAll(arestasRejeitadas);
+
+        return arestasInexploradas;
+    }
+
+    public static Cidade obterCidadeDestino(Cidade origem, Aresta aresta){
+
+        Cidade destino = null;
+
+        for (Cidade cidade : aresta.getCidades()){
+
+            if (!origem.equals(cidade)){
+
+                destino = cidade;
+                break;
+            }
+        }
+
+        return destino;
     }
 }

@@ -10,7 +10,6 @@ public class Cidade {
 
     private int id;
     private Coordenada coordenada;
-    private List<Aresta> arestas = new ArrayList<>();
 
     public Cidade(){ }
 
@@ -41,10 +40,6 @@ public class Cidade {
         return "entidade.Cidade{" +
                 "id=" + id +
                 '}';
-    }
-
-    public List<Aresta> getArestas() {
-        return arestas;
     }
 
     public Coordenada getCoordenada() {

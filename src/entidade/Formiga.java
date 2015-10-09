@@ -1,5 +1,6 @@
 package entidade;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -13,8 +14,8 @@ public class Formiga {
     private int id;
     private Cidade cidadePosicionada;
     private List<Visita> tour = new ArrayList<>();
-    //private double DeltaTau; // Somatório de 1/Lk {Lk = distância}, útil para o cálculo de depósito de feromônio local {regra (02)}
-    private Map<Aresta, Double> DeltaTau = new HashMap<>();
+    // Somatório de 1/Lk {Lk = distância}, útil para o cálculo de depósito de feromônio local {regra (02)}
+    private Map<Aresta, BigDecimal> DeltaTau = new HashMap<>();
 
     public Formiga(int id, Cidade cid){
 
@@ -45,11 +46,11 @@ public class Formiga {
                 '}';
     }
 
-    public Map<Aresta, Double> getDeltaTau() {
+    public Map<Aresta, BigDecimal> getDeltaTau() {
         return DeltaTau;
     }
 
-    public void setDeltaTau(Map<Aresta, Double> deltaTau) {
+    public void setDeltaTau(Map<Aresta, BigDecimal> deltaTau) {
         this.DeltaTau = deltaTau;
     }
 

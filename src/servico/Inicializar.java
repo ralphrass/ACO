@@ -6,6 +6,8 @@ import util.Utils;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.*;
 
 /**
@@ -20,6 +22,7 @@ public class Inicializar {
 
     public static List<Cidade> cidades = new ArrayList<>();
 
+    //private static final String ARQUIVO = "C:\\Users\\Ralph\\workspace-gpin-intellij\\ACO\\src\\recursos\\cidades_12.txt";
     private static final String ARQUIVO = "C:\\Users\\Ralph\\workspace-gpin-intellij\\ACO\\src\\recursos\\cenario_50.txt";
 
     public static void lerArquivo(String caminho){
@@ -48,8 +51,8 @@ public class Inicializar {
 
                     } else {
 
-                        adicionarAresta(item, idAresta);
-                        idAresta++;
+                        if (adicionarAresta(item, idAresta))
+                            idAresta++;
                     }
                 }
             }
@@ -72,29 +75,35 @@ public class Inicializar {
         cidades.add(cidade);
     }
 
-    private static void adicionarAresta(String[] item, int idAresta){
+    private static boolean adicionarAresta(String[] item, int idAresta){
 
-        final Cidade cidadeOrigem = cidades.get(Integer.parseInt(item[0]));
-        final Cidade cidadeDestino = cidades.get(Integer.parseInt(item[1]));
+        final Cidade cidade1 = cidades.get(Integer.parseInt(item[0]));
+        final Cidade cidade2 = cidades.get(Integer.parseInt(item[1]));
+
+        if (cidade1.equals(cidade2)){
+
+            System.out.println("Aresta inválida para a cidade: "+cidade1);
+            return false;
+        }
 
         //TODO, substituir pela distância euclidiana (evitar loop)
-        final double distancia = calcularDistancia(cidadeOrigem, cidadeDestino);
+        final BigDecimal distancia = calcularDistancia(cidade1, cidade2);
 
-        final Aresta aresta = new Aresta(idAresta, cidadeDestino, distancia, 0);
-        final Aresta aresta2 = new Aresta(idAresta, cidadeOrigem, distancia, 0);
+        Aresta aresta = new Aresta(idAresta, cidade1, cidade2, distancia, new BigDecimal(0));
 
-        cidadeOrigem.getArestas().add(aresta);
-        cidadeDestino.getArestas().add(aresta2);
+        ACS.arestas.add(aresta);
+
+        return true;
     }
 
-    private static double calcularDistancia(Cidade cidade1, Cidade cidade2){
+    private static BigDecimal calcularDistancia(Cidade cidade1, Cidade cidade2){
 
         final int DOIS = 2;
 
         final int deltaX = cidade1.getCoordenada().getX() - cidade2.getCoordenada().getX();
         final int deltaY = cidade1.getCoordenada().getY() - cidade2.getCoordenada().getY();
 
-        final double distancia = Math.sqrt(Math.pow(deltaX, DOIS) + Math.pow(deltaY, DOIS));
+        final BigDecimal distancia = new BigDecimal(Math.sqrt(Math.pow(deltaX, DOIS) + Math.pow(deltaY, DOIS))).setScale(8, RoundingMode.HALF_UP);
 
         return distancia;
     }
@@ -118,19 +127,14 @@ public class Inicializar {
 
         ACS.L_BEST = NearestNeighbour.obterDistanciaDoMenorTour();
 
-        final int TAMANHO = ACS.cidades.size();
-        ACS.TAU_ZERO = Math.pow(TAMANHO * ACS.L_BEST, -1);
+        final BigDecimal TAMANHO = new BigDecimal(ACS.cidades.size());
+
+        ACS.TAU_ZERO = new BigDecimal(Math.pow(ACS.L_BEST.multiply(TAMANHO).doubleValue(), -1)).setScale(8, RoundingMode.HALF_UP);
 
         //Atualiza o feromônio de todas as arestas
-        for (Cidade cidade : ACS.cidades) {
+        for (Aresta aresta : ACS.arestas) {
 
-            for (Aresta aresta : cidade.getArestas()){
-
-                if (aresta.getFeromonio() == 0){
-
-                    aresta.setFeromonio(ACS.TAU_ZERO);
-                }
-            }
+            aresta.setFeromonio(ACS.TAU_ZERO);
         }
     }
 

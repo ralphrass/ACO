@@ -1,5 +1,9 @@
 package entidade;
 
+import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * Created by Ralph on 05/10/2015.
  */
@@ -7,17 +11,21 @@ public class Aresta {
 
     private int id;
 
-    private Cidade vizinho;
+    private List<Cidade> cidades;
 
-    private double distancia;
-    private double feromonio;
+    private BigDecimal distancia;
+    private BigDecimal feromonio;
 
-    public Aresta(int idP, Cidade vizinhoP, double distanciaP, double feromonioP){
+    public Aresta(int idP, Cidade cidade1, Cidade cidade2, BigDecimal distanciaP, BigDecimal feromonioP){
 
         this.id = idP;
-        this.vizinho = vizinhoP;
         this.distancia = distanciaP;
         this.feromonio = feromonioP;
+
+        this.cidades = new ArrayList<>();
+
+        this.cidades.add(cidade1);
+        this.cidades.add(cidade2);
     }
 
     @Override
@@ -51,27 +59,27 @@ public class Aresta {
         this.id = id;
     }
 
-    public Cidade getVizinho() {
-        return vizinho;
-    }
-
-    public void setVizinho(Cidade vizinho) {
-        this.vizinho = vizinho;
-    }
-
-    public double getDistancia() {
+    public BigDecimal getDistancia() {
         return distancia;
     }
 
-    public void setDistancia(double distancia) {
+    public void setDistancia(BigDecimal distancia) {
         this.distancia = distancia;
     }
 
-    public double getFeromonio() {
+    public BigDecimal getFeromonio() {
         return feromonio;
     }
 
-    public void setFeromonio(double feromonio) {
+    public void setFeromonio(BigDecimal feromonio) {
         this.feromonio = feromonio;
+    }
+
+    public List<Cidade> getCidades() {
+        return cidades;
+    }
+
+    public void setCidades(List<Cidade> cidades) {
+        this.cidades = cidades;
     }
 }

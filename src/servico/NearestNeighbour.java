@@ -2,7 +2,9 @@ package servico;
 
 import entidade.Aresta;
 import entidade.Cidade;
+import util.Utils;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -11,12 +13,11 @@ import java.util.List;
  */
 public class NearestNeighbour {
 
-    public static double obterDistanciaDoMenorTour(){
+    public static BigDecimal obterDistanciaDoMenorTour(){
 
-        double Lnn = 0d; //distância total do Visita
+        BigDecimal Lnn = new BigDecimal(0); //distância total do Visita
         List<Cidade> cidadesVisitadas = new ArrayList<>();
 
-        //1. Inicia em uma cidade qualquer
         Cidade cidadeCorrente = ACS.cidades.get(ACS.ID_CIDADE_ORIGEM);
         cidadesVisitadas.add(cidadeCorrente);
 
@@ -26,12 +27,12 @@ public class NearestNeighbour {
             Aresta aresta = obterArestaMaisCurta(cidadeCorrente, cidadesVisitadas);
 
             //3. Atualiza a cidade corrente
-            cidadeCorrente = aresta.getVizinho();
+            cidadeCorrente = Utils.obterCidadeDestino(cidadeCorrente, aresta);
 
             //4. Marca a cidade corrente como já visitada
             cidadesVisitadas.add(cidadeCorrente);
 
-            Lnn += aresta.getDistancia();
+            Lnn = Lnn.add(aresta.getDistancia());
 
             //5. Se chegou à cidade destino, sai fora
             if (cidadeCorrente.equals(ACS.cidades.get(ACS.ID_CIDADE_DESTINO))){
@@ -52,20 +53,18 @@ public class NearestNeighbour {
 
         Aresta arestaMaisCurta = null;
 
-        for (Aresta aresta : cidade.getArestas()){
+        for (Aresta aresta : ACS.arestas){
 
-            if (cidadesVisitadas.contains(aresta.getVizinho())){
+            if (aresta.getCidades().contains(cidade)){
 
-                continue;
-            }
+                if (arestaMaisCurta == null){
 
-            if (arestaMaisCurta == null){
+                    arestaMaisCurta = aresta;
 
-                arestaMaisCurta = aresta;
+                } else if (arestaMaisCurta.getDistancia().compareTo(aresta.getDistancia()) == 1) { //arestaMaisCurta.getDistancia() > aresta.getDistancia()
 
-            } else if (arestaMaisCurta.getDistancia() > aresta.getDistancia()) {
-
-                arestaMaisCurta = aresta;
+                    arestaMaisCurta = aresta;
+                }
             }
         }
 

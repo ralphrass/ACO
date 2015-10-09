@@ -1,10 +1,12 @@
 package util;
 
+import entidade.Visita;
 import servico.ACS;
 
 import java.io.FileNotFoundException;
 import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
+import java.util.List;
 
 /**
  * Created by Ralph on 07/10/2015.
@@ -31,6 +33,7 @@ public class GerarResultado {
         }
 
         StringBuilder parametros = new StringBuilder();
+
         parametros.append(ACS.ALFA);
         parametros.append(SEPARADOR);
         parametros.append(ACS.BETA);
@@ -41,7 +44,24 @@ public class GerarResultado {
         parametros.append(SEPARADOR);
         parametros.append(ACS.NR_ITERACOES);
         
-        writer.println(parametros.toString());
+        writer.println(parametros);
+
+        for (List<Visita> visitas : ACS.melhoresTours){
+
+            StringBuilder tour = new StringBuilder();
+
+            for (int i=0; i<visitas.size(); i++) {
+
+                tour.append(visitas.get(i).getCidade().getId());
+
+                if (i != (visitas.size()-1)) {
+
+                    tour.append(SEPARADOR);
+                }
+            }
+
+            writer.println(tour);
+        }
 
         writer.close();
     }
