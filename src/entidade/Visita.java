@@ -14,6 +14,13 @@ public class Visita {
         this.aresta = aresta;
     }
 
+    @Override
+    public String toString() {
+        return "Visita{" +
+                "cidade=" + cidade +
+                '}';
+    }
+
     public Cidade getCidade() {
         return cidade;
     }

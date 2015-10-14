@@ -14,7 +14,10 @@ public class Formiga {
     private int id;
     private Cidade cidadePosicionada;
     private List<Visita> tour = new ArrayList<>();
-    // Somatório de 1/Lk {Lk = distância}, útil para o cálculo de depósito de feromônio local {regra (02)}
+
+    /**
+     * Somatório de 1/Lk {Lk = distância}, útil para o cálculo de depósito de feromônio local {regra (02)}
+     * */
     private Map<Aresta, BigDecimal> DeltaTau = new HashMap<>();
 
     public Formiga(int id, Cidade cid){

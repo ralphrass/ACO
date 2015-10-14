@@ -14,20 +14,48 @@ import java.util.List;
  */
 public class Utils {
 
-    public static Double reduzirValor(Double valor){
+    /**
+     * Analisa as arestas adjacentes à cidade aonde a formiga está posicionada
+     * */
+    public static List<Aresta> obterArestasInexploradas(Formiga formiga){
 
-        final Double valorT = Double.parseDouble(valor.toString().substring(0, obterTamanho(valor)));
+        List<Aresta> arestasInexploradas = new ArrayList<>();
 
-        return valorT;
-    }
+        for (Aresta aresta : ACS.arestas){
 
-    private static int obterTamanho(Double valor){
+            if (aresta.getCidades().contains(formiga.getCidadePosicionada())){
 
-        final int LIMITE = 8;
+                if (ACS.DESCONSIDERAR_ARESTAS_VISITADAS){
 
-        final int TAMANHO = (valor.toString().length() > LIMITE)?LIMITE:valor.toString().length();
+                    if (!isArestaJaVisitada(formiga, aresta)) {
 
-        return TAMANHO;
+                        arestasInexploradas.add(aresta);
+                    }
+
+                } else {
+
+                    arestasInexploradas.add(aresta);
+                }
+            }
+        }
+
+        if (ACS.DESCONSIDERAR_CIDADES_VISITADAS) {
+
+            //Pós-tratamento de arestas inexploradas: evita que a formiga re-visite uma cidade
+            List<Aresta> arestasRejeitadas = new ArrayList<>();
+
+            for (Aresta aresta : arestasInexploradas) {
+
+                if (isCidadeJaVisitada(formiga, aresta)) {
+
+                    arestasRejeitadas.add(aresta);
+                }
+            }
+
+            arestasInexploradas.removeAll(arestasRejeitadas);
+        }
+
+        return arestasInexploradas;
     }
 
     public static boolean isArestaJaVisitada(Formiga formiga, Aresta aresta){
@@ -62,37 +90,10 @@ public class Utils {
         return false;
     }
 
-    public static List<Aresta> obterArestasInexploradas(Formiga formiga){
-
-        List<Aresta> arestasInexploradas = new ArrayList<>();
-
-        for (Aresta aresta : ACS.arestas){
-
-            if (aresta.getCidades().contains(formiga.getCidadePosicionada())){ //analisa apenas as arestas associadas à cidade aonde a formiga está posicionada
-
-                if (!isArestaJaVisitada(formiga, aresta)){
-
-                    arestasInexploradas.add(aresta);
-                }
-            }
-        }
-
-        //Pós-tratamento de arestas inexploradas: evita que a formiga re-visite uma cidade
-        List<Aresta> arestasRejeitadas = new ArrayList<>();
-
-        for (Aresta aresta : arestasInexploradas) {
-
-            if (isCidadeJaVisitada(formiga, aresta)){
-
-                arestasRejeitadas.add(aresta);
-            }
-        }
-
-        arestasInexploradas.removeAll(arestasRejeitadas);
-
-        return arestasInexploradas;
-    }
-
+    /**
+     * Identifica para onde a formiga está indo com base na cidade aonde ela está posicionada.
+     * Apesar de percorrer o vetor de cidades, há apenas duas possibilidades em uma aresta.
+     * */
     public static Cidade obterCidadeDestino(Cidade origem, Aresta aresta){
 
         Cidade destino = null;

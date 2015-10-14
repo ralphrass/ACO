@@ -18,37 +18,48 @@ public class CalcularTransicao {
 
     /**
      * Eq. {1} - probabilidade pseudo-randômica (exploration)
+     * Peso: Divisão do feromônio de cada aresta adjacente pela distância inversa entre as 2 cidades.
+     * Soma os pesos de todas as arestas e escolhe uma, randomicamente, subtraindo o peso de cada aresta do total.
+     * Quando o peso total for menor ou igual a ZERO, escolhe aquela aresta.
      * TODO - ArrayIndexOutOfBounds (?)
      * */
     public static Aresta escolherPorProbabilidadePseudoRandomica(List<Aresta> arestas){
 
         int indice = 0;
-        BigDecimal denominador, probabilidadeLocal, pesoTotal = new BigDecimal(0);
+        BigDecimal numerador = new BigDecimal(0), denominador, probabilidadeLocal, pesoTotal = new BigDecimal(0);
         Aresta proximaAresta = null;
         List<Aresta> arestasRestantes;
 
         BigDecimal[] pesos = new BigDecimal[arestas.size()];
 
-        for (Aresta aresta : arestas) { //Explora todas as cidades adjacentes à cidade em que a formiga se encontra
+        for (Aresta aresta : arestas) {
 
             denominador = new BigDecimal(0);
 
-            final BigDecimal NUMERADOR = calcularCustoDaAresta(aresta);
+            try {
 
-            arestasRestantes = new ArrayList<>(arestas);
-            arestasRestantes.remove(aresta);
+                numerador = calcularCustoDaAresta(aresta);
 
-            //Somatório das arestas restantes para obter o denominador
-            for (Aresta arestaRestante : arestasRestantes){
+                arestasRestantes = new ArrayList<>(arestas);
+                arestasRestantes.remove(aresta);
 
-                denominador = denominador.add(calcularCustoDaAresta(arestaRestante));
+                //Somatório das arestas restantes para obter o denominador
+                for (Aresta arestaRestante : arestasRestantes) {
+
+                    denominador = denominador.add(calcularCustoDaAresta(arestaRestante));
+                }
+
+                probabilidadeLocal = numerador.divide(denominador, ACS.CASAS_DECIMAIS, RoundingMode.HALF_UP);
+
+                pesoTotal = pesoTotal.add(probabilidadeLocal);
+
+                pesos[indice++] = probabilidadeLocal;
+
+            } catch (ArithmeticException e) {
+
+                System.out.println("Falha ao calcular probabilidade para a aresta " + aresta + ". Numerador: " + numerador.setScale(12, RoundingMode.HALF_UP) + " Denominador: "+denominador+". Arestas: "+arestas.size());
+                //e.printStackTrace();
             }
-
-            probabilidadeLocal = NUMERADOR.divide(denominador, 12, RoundingMode.HALF_UP);
-
-            pesoTotal = pesoTotal.add(probabilidadeLocal);
-
-            pesos[indice++] = probabilidadeLocal;
         }
 
         int indiceRandomico = -1;
@@ -110,7 +121,8 @@ public class CalcularTransicao {
      * */
     private static BigDecimal calcularCustoDaAresta(Aresta aresta){
 
-        BigDecimal feromonioLocal = aresta.getFeromonio().multiply(obterDistanciaInversa(aresta));
+        //BigDecimal feromonioLocal = aresta.getFeromonio().multiply(obterDistanciaInversa(aresta)).setScale(ACS.CASAS_DECIMAIS, RoundingMode.HALF_UP);
+        BigDecimal feromonioLocal = aresta.getFeromonio().multiply(obterDistanciaInversa(aresta)).setScale(ACS.CASAS_DECIMAIS, RoundingMode.HALF_UP);
         return feromonioLocal;
     }
 
@@ -123,8 +135,8 @@ public class CalcularTransicao {
 
         try {
 
-            ETA = ETA.divide(aresta.getDistancia(), 12, RoundingMode.HALF_UP);
-            BigDecimal distanciaInversa = new BigDecimal(Math.pow(ETA.doubleValue(), ACS.BETA)).setScale(12, RoundingMode.HALF_UP);
+            ETA = ETA.divide(aresta.getDistancia(), ACS.CASAS_DECIMAIS, RoundingMode.HALF_UP);
+            BigDecimal distanciaInversa = new BigDecimal(Math.pow(ETA.doubleValue(), ACS.BETA)).setScale(ACS.CASAS_DECIMAIS, RoundingMode.HALF_UP);
 
             return distanciaInversa;
 
