@@ -1,18 +1,15 @@
 package servico;
 
 import entidade.Aresta;
-import entidade.Formiga;
-import util.Utils;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 
 /**
  * Created by Ralph on 08/10/2015.
- * Cálculo da função de transição (equações {1} e {3})
+ * Cálculo da função de transicao (equações {1} e {3})
  */
 public class CalcularTransicao {
 
@@ -21,7 +18,6 @@ public class CalcularTransicao {
      * Peso: Divisão do feromônio de cada aresta adjacente pela distância inversa entre as 2 cidades.
      * Soma os pesos de todas as arestas e escolhe uma, randomicamente, subtraindo o peso de cada aresta do total.
      * Quando o peso total for menor ou igual a ZERO, escolhe aquela aresta.
-     * TODO - ArrayIndexOutOfBounds (?)
      * */
     public static Aresta escolherPorProbabilidadePseudoRandomica(List<Aresta> arestas){
 
@@ -85,7 +81,7 @@ public class CalcularTransicao {
 
         } catch (Exception e) {
 
-            System.out.println("Falha ao obter o índice: "+indiceRandomico+". Quantidade de arestas: "+arestas.size());
+            System.out.println("Falha ao obter o indice: "+indiceRandomico+". Quantidade de arestas: "+arestas.size());
             e.printStackTrace();
         }
 
@@ -122,7 +118,8 @@ public class CalcularTransicao {
     private static BigDecimal calcularCustoDaAresta(Aresta aresta){
 
         //BigDecimal feromonioLocal = aresta.getFeromonio().multiply(obterDistanciaInversa(aresta)).setScale(ACS.CASAS_DECIMAIS, RoundingMode.HALF_UP);
-        BigDecimal feromonioLocal = aresta.getFeromonio().multiply(obterDistanciaInversa(aresta)).setScale(ACS.CASAS_DECIMAIS, RoundingMode.HALF_UP);
+        BigDecimal feromonioLocal = aresta.getFeromonio().multiply(obterDistanciaInversa(aresta));
+
         return feromonioLocal;
     }
 
@@ -131,14 +128,11 @@ public class CalcularTransicao {
      * */
     private static BigDecimal obterDistanciaInversa(Aresta aresta){
 
-        BigDecimal ETA = new BigDecimal(1);
-
         try {
 
-            ETA = ETA.divide(aresta.getDistancia(), ACS.CASAS_DECIMAIS, RoundingMode.HALF_UP);
-            BigDecimal distanciaInversa = new BigDecimal(Math.pow(ETA.doubleValue(), ACS.BETA)).setScale(ACS.CASAS_DECIMAIS, RoundingMode.HALF_UP);
+            BigDecimal ETA = new BigDecimal(Math.pow( (1d/aresta.getDistancia().doubleValue()), ACS.BETA));
 
-            return distanciaInversa;
+            return ETA;
 
         } catch (Exception e) {
 

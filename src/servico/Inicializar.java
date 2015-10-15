@@ -1,11 +1,8 @@
 package servico;
 
 import entidade.*;
-import servico.ACS;
-import util.Utils;
 
-import java.io.BufferedReader;
-import java.io.FileReader;
+import java.io.*;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.*;
@@ -13,7 +10,7 @@ import java.util.*;
 /**
  * Created by Ralph on 05/10/2015.
  *
- * Lê um arquivo texto e organiza os linhas em um vetor
+ * Lï¿½ um arquivo texto e organiza os linhas em um vetor
  */
 public class Inicializar {
 
@@ -22,15 +19,24 @@ public class Inicializar {
 
     public static List<Cidade> cidades = new ArrayList<>();
 
+    /*
     //private static final String ARQUIVO = "C:\\Users\\Ralph\\workspace-gpin-intellij\\ACO\\src\\recursos\\cidades_12.txt";
     private static final String ARQUIVO = "C:\\Users\\Ralph\\workspace-gpin-intellij\\ACO\\src\\recursos\\cenario_10.txt";
     //private static final String ARQUIVO = "C:\\Users\\Ralph\\workspace-gpin-intellij\\ACO\\src\\recursos\\cenario_50.txt";
     //private static final String ARQUIVO = "C:\\Users\\Ralph\\workspace-gpin-intellij\\ACO\\src\\recursos\\cenario_70.txt";
     //private static final String ARQUIVO = "C:\\Users\\Ralph\\workspace-gpin-intellij\\ACO\\src\\recursos\\cenario_100.txt";
+    */
+
+    //private static final String ARQUIVO = "\\src\\recursos\\cidades_12.txt";
+    //private static final String ARQUIVO = "\\src\\recursos\\cenario_10.txt";
+    //private static final String ARQUIVO = "\\src\\recursos\\cenario_50.txt";
+    //private static final String ARQUIVO = "\\src\\recursos\\cenario_70.txt";
+    private static final String ARQUIVO = "\\src\\recursos\\cenario_100.txt";
 
     public static void lerArquivo(String caminho){
 
-        try (BufferedReader br = new BufferedReader(new FileReader(caminho))) {
+        //try (BufferedReader br = new BufferedReader(new FileReader(caminho))) {
+        try (BufferedReader br = new BufferedReader(new FileReader(new File("").getAbsolutePath()+ARQUIVO))){
 
             String line;
             String[] item;
@@ -85,7 +91,7 @@ public class Inicializar {
 
         if (cidade1.equals(cidade2)){
 
-            System.out.println("Aresta inválida para a cidade: "+cidade1);
+            System.out.println("Aresta invalida para a cidade: "+cidade1);
             return false;
         }
 
@@ -99,7 +105,7 @@ public class Inicializar {
     }
 
     /**
-     * TODO distância dividido por 10
+     * TODO distancia dividido por 10
      * */
     private static BigDecimal calcularDistancia(Cidade cidade1, Cidade cidade2){
 
@@ -126,11 +132,11 @@ public class Inicializar {
 
     /**
      * Fase (1) - Parte II/III
-     * Ignora o algoritmo do vizinho mais próximo (Nearest Neighbour) porquê ele pode entrar em loop
+     * Ignora o algoritmo do vizinho mais proximo (Nearest Neighbour) porque ele pode entrar em loop
      * */
     private static void inicializarFeromonios(){
 
-        //ACS.L_BEST = NearestNeighbour.obterDistanciaDoMenorTour();
+        ACS.L_BEST = NearestNeighbour.obterDistanciaMedia();
 
         final BigDecimal TAMANHO = new BigDecimal(ACS.cidades.size());
 
@@ -161,7 +167,7 @@ public class Inicializar {
     }
 
     /**
-     * Fase (1) - Parte III/III - Posiciona formigas em cidades de forma randômica
+     * Fase (1) - Parte III/III - Posiciona formigas em cidades de forma randomica
      * */
     public static void inicializarFormigas(){
 

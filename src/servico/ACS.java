@@ -38,7 +38,7 @@ public class ACS {
      * Parametro para decidir o metodo de transicao (caminho mais curto ou probabilidade ponderada).
      * Quanto maior o valor de q0, maior a chance de favorecer o caminho mais curto: Deve ser 0 <= q0 <= 1
      * */
-    private static final double q0 = 0.9;
+    private static final double q0 = 0.4;
 
     /**
      * TAU = Feromonio. TAU_ZERO = Feromonio inicial ((n*Lnn)^-1)
@@ -60,9 +60,9 @@ public class ACS {
      * */
     public static final int ID_CIDADE_ORIGEM = 0;
     public static final int ID_CIDADE_DESTINO = 1;
-    public static final int CASAS_DECIMAIS = 12;
+    public static final int CASAS_DECIMAIS = 16;
     public final static boolean DESCONSIDERAR_ARESTAS_VISITADAS = false;
-    public final static boolean DESCONSIDERAR_CIDADES_VISITADAS = false;
+    public final static boolean DESCONSIDERAR_CIDADES_VISITADAS = true;
     private static final long TEMPO_LIMITE = 4000; //milisegundos por formiga
 
     /**
@@ -91,6 +91,12 @@ public class ACS {
 
                     Aresta proximaAresta = executarRegraDeTransicao(formiga);
 
+                    if (proximaAresta == null){
+
+                        System.out.println("-------- Entrou em loop. ");
+                        break;
+                    }
+
                     moverFormigaUmPasso(formiga, proximaAresta);
 
                     if (formiga.getCidadePosicionada().getId() == ID_CIDADE_DESTINO) {
@@ -99,11 +105,11 @@ public class ACS {
                         break;
                     }
 
-                    if ( (System.currentTimeMillis() - inicio) > ACS.TEMPO_LIMITE) {
+                    /*if ( (System.currentTimeMillis() - inicio) > ACS.TEMPO_LIMITE) {
 
                         System.out.println("-------- Tempo limite atingido ");
                         break;
-                    }
+                    }*/
 
                 } // while do Tour
 
@@ -114,7 +120,7 @@ public class ACS {
 
             } // for das Formigas
 
-            //retornarParaOrigem();
+            retornarParaOrigem();
 
             System.out.println("INFO: " + formigasComTourCompleto.size() + " formigas com tour completo.");
 
@@ -199,8 +205,6 @@ public class ACS {
 
         final BigDecimal SEGUNDO_TERMO = FEROMONIO_TOTAL.add(RHO).multiply(TAU_ZERO);
 
-        //final BigDecimal feromonio = PRIMEIRO_TERMO.multiply(FEROMONIO_TOTAL).add((RHO).multiply(TAU_ZERO));
-
         final BigDecimal feromonio = PRIMEIRO_TERMO.multiply(SEGUNDO_TERMO).setScale(ACS.CASAS_DECIMAIS, RoundingMode.HALF_UP);
 
         return feromonio;
@@ -240,7 +244,6 @@ public class ACS {
      * */
     private static void atualizarFeromonioGlobal(Set<Formiga> formigasComTourCompleto){
 
-        //BigDecimal Lbest = L_BEST.multiply(new BigDecimal(2)); //"piora" o melhor Tour
         BigDecimal Lbest = L_BEST;
         List<Visita> melhorTour = new ArrayList<>();
 
@@ -294,8 +297,6 @@ public class ACS {
 
             DELTA_TAU = new BigDecimal(0);
         }
-
-        //BigDecimal feromonio = new BigDecimal(1).subtract(ALFA).multiply(aresta.getFeromonio()).add(ALFA).multiply(DELTA_TAU);
 
         BigDecimal feromonio = new BigDecimal(1).subtract(ALFA);
         feromonio.multiply(aresta.getFeromonio());
